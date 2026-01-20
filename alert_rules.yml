@@ -1,0 +1,15 @@
+groups:
+- name: task_pulse_alerts
+  rules:
+  - alert: HighErrorRate
+    # Logic: If the rate of 5xx errors is > 5% of total traffic
+    expr: |
+      sum(rate(http_request_duration_seconds_count{status_code=~"5.."}[5m])) 
+      / 
+      sum(rate(http_request_duration_seconds_count[5m])) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High Error Rate detected on {{ $labels.instance }}"
+      description: "The 5xx error rate is above 5% for the last 2 minutes. Current value: {{ $value | printf \"%.2f\" }}%"
