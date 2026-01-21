@@ -1,0 +1,28 @@
+name: CI/CD Pipeline
+on: [push]
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install & Lint
+        run: |
+          npm install
+          npm run lint
+
+      - name: Unit Tests (Quality Gate)
+        run: npm test # Fails if coverage < 80%
+
+      - name: Build Docker Image
+        run: docker build -t task-pulse:latest .
+
+      - name: Security Scan (Snyk)
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Deploy to K8s
+        if: github.ref == 'refs/heads/main'
+        run: kubectl apply -f k8s/deployment.yaml
